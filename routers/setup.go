@@ -16,6 +16,7 @@ func SetupRouters(app *gin.Engine) {
 		v1.GET("/users", controllers.GetUsers)
 		v1.PATCH("/user", controllers.UpdateUser)
 		v1.DELETE("/user/:id", controllers.DeleteUser)
+		v1.GET("/test/mail", controllers.SendTrxOtp)
 	}
 	// Standalone route example
 	// app.GET("/ping", controllers.Ping)

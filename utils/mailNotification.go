@@ -14,9 +14,10 @@ import (
 )
 
 type EmailData struct {
-	URL       string
+	URL string
 	FirstName string
-	Subject   string
+	Subject string
+	MailTo string
 }
 
 
@@ -46,7 +47,6 @@ func SendEmail(data *EmailData) error {
 	from := GetEnvVar("EMAIL_FROM")
 	smtpPass := GetEnvVar("SMTP_PASS")
 	smtpUser := GetEnvVar("SMTP_USER")
-	to := GetEnvVar("EMAIL_TO")
 	smtpHost := GetEnvVar("SMTP_HOST")
 	portString := GetEnvVar("SMTP_PORT")
 
@@ -55,8 +55,6 @@ func SendEmail(data *EmailData) error {
         // ... handle error
         log.Fatal("Could not covert port string", err)
     }
-
-
 
 	var body bytes.Buffer
 	template, err := ParseTemplateDir("views/templates")
@@ -69,7 +67,7 @@ func SendEmail(data *EmailData) error {
 	m := gomail.NewMessage()
 
 	m.SetHeader("From", from)
-	m.SetHeader("To", to)
+	m.SetHeader("To", data.MailTo)
 	m.SetHeader("Subject", data.Subject)
 	m.SetBody("text/html", body.String())
 	m.AddAlternative("text/plain", html2text.HTML2Text(body.String()))
