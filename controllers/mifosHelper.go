@@ -1,7 +1,9 @@
 package controllers
 
 import (
-	"pesanode/gobackend/utils"
+	"encoding/json"
+	"pesanode/gobackend/mifos"
+	"strconv"
 	"time"
 
 	"github.com/rs/zerolog/log"
@@ -9,11 +11,19 @@ import (
 
 type SuccessResponse struct {
 	Status string
-	Data []string
+	Data map[string]interface{}
 }
 
 type MifosClientSearchString struct {
 	QueryString string
+}
+
+type MifosClientSearchId struct {
+	ClientId string
+}
+
+type MifosAcTransferResourceId struct {
+	ResourceId int
 }
 
 func mifosFormatDate (f_date time.Time) string {
@@ -26,24 +36,35 @@ func mifosFormatDate (f_date time.Time) string {
 }
 
 
-func mifosResponse (resp[] string) SuccessResponse {
-	if !isElementExist(resp,"developerMessage") && !isElementExist(resp,"timestamp") {
+func mifosResponse (resp map[string]interface{}) SuccessResponse {
 
-		res := SuccessResponse{
-			Status: "success",
-			Data: resp,
-		}
+	if  value, isMapContainsKey := resp["developerMessage"]; isMapContainsKey {
 
-		return res
-	}else{
-		log.Error().Msg("Mifos error check API logs for further info")
+		log.Error().Msg("Mifos error check API logs for further info"+ value.(string))
 		res := SuccessResponse{
 			Status: "error",
 			Data: resp,
 		}
 
 		return res
+	}else if  value, isMapContainsKey := resp["timestamp"]; isMapContainsKey {
+
+		log.Error().Msg("Mifos error check API logs for further info"+ value.(string))
+		res := SuccessResponse{
+			Status: "error",
+			Data: resp,
+		}
+
+		return res
+	}else{
+		res := SuccessResponse{
+			Status: "success",
+			Data: resp,
+		}
+
+		return res
 	}
+
 }
 
 func isElementExist(s []string, str string) bool {
@@ -56,12 +77,51 @@ func isElementExist(s []string, str string) bool {
 }
 
 func fetchClientBySearch(queryString *MifosClientSearchString) SuccessResponse {
-	payload := utils.MifosPayloadGet{
-		UrlExt: "search?query=" + queryString.QueryString + "&resource=clients&exactMatch=true",
+	payload := mifos.MifosPayloadGet{
+		UrlExt: "/search?query=" + queryString.QueryString + "&resource=clients&exactMatch=true",
 	}
 
-	result := utils.MifosGet(&payload)
-	return mifosResponse(string(result))
+	result := mifos.MifosGet(&payload)
+	var res_format map[string]interface{}
+	err := json.Unmarshal(result, res_format)
+	if err == nil {
+		log.Error().Err(err).
+			Msg("Error occurred processing mifos response")
+	}
 
+	return mifosResponse(res_format)
+	
+}
+
+func fetchClientById(id *MifosClientSearchId) SuccessResponse {
+	payload := mifos.MifosPayloadGet{
+		UrlExt: "/clients/" + id.ClientId,
+	}
+
+	client_result := mifos.MifosGet(&payload)
+	var client_format map[string]interface{}
+	err := json.Unmarshal(client_result, &client_format)
+	if err == nil {
+		log.Error().Err(err).
+			Msg("Error occurred processing mifos client response")
+	}
+
+	return mifosResponse(client_format)
+}
+
+func fetchAcTransferById(id *MifosAcTransferResourceId) SuccessResponse {
+	payload := mifos.MifosPayloadGet{
+		UrlExt: "/accounttransfers/" + strconv.Itoa(id.ResourceId),
+	}
+
+	result := mifos.MifosGet(&payload)
+	var res_format map[string]interface{}
+	err := json.Unmarshal(result, &res_format)
+	if err == nil {
+		log.Error().Err(err).
+			Msg("Error occurred processing mifos response")
+	}
+
+	return mifosResponse(res_format)
 	
 }

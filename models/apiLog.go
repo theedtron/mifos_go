@@ -20,7 +20,7 @@ type ApiLog struct {
 	DeletedAt gorm.DeletedAt `json:"deleted_at"`
 }
 
-func (x *ApiLog) FillDefaults() {
+func (x *ApiLog) ApiLogFillDefaults() {
 	if x.ID == "" {
 		x.ID = uuid.New().String()
 	}

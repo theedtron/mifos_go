@@ -1,4 +1,4 @@
-package utils
+package mifos
 
 import (
 	"bytes"
@@ -7,10 +7,12 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"pesanode/gobackend/models"
+	models "pesanode/gobackend/models"
+	"pesanode/gobackend/utils"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/rs/zerolog/log"
 )
 
@@ -23,10 +25,10 @@ type MifosPayloadGet struct {
 	UrlExt string
 }
 
-var url = GetEnvVar("MIFOS_URL")
+var url = utils.GetEnvVar("MIFOS_URL")
 
 func mifosPost(clientBody []string, c *gin.Context) {
-	cred := GetEnvVar("MIFOS_UN")+GetEnvVar("MIFOS_PASS")
+	cred := utils.GetEnvVar("MIFOS_UN")+utils.GetEnvVar("MIFOS_PASS")
     baseCred := base64.StdEncoding.EncodeToString([]byte(cred))
 	formatData, err := json.Marshal(clientBody)
 	if err != nil {
@@ -40,9 +42,9 @@ func mifosPost(clientBody []string, c *gin.Context) {
 	}
 
 	// Set headers
-	req.Header.Set("Authorization", baseCred)
+	req.Header.Set("Authorization", "Basic "+baseCred)
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Fineract-Platform-TenantId", GetEnvVar("MIFOS_TENANT"))
+	req.Header.Set("Fineract-Platform-TenantId", utils.GetEnvVar("MIFOS_TENANT"))
 
 	// Set client timeout
 	client := &http.Client{Timeout: time.Second * 10}
@@ -66,17 +68,18 @@ func mifosPost(clientBody []string, c *gin.Context) {
 	}
 
 	var apiLog models.ApiLog
-	apiLog.FillDefaults()
+	apiLog.ApiLogFillDefaults()
 
-	db, conErr := GetDatabaseConnection()
+	db, conErr := utils.GetDatabaseConnection()
 	if conErr != nil {
 		log.Err(conErr).Msg("Error occurred while getting a DB connection from the connection pool")
 		fmt.Printf("Service unavailable")
 		return
 	}
 
-	// Create a user
+	// Log mifos response
 	apiLogData := models.ApiLog{
+		ID: uuid.New().String(),
 		RequestUrl: url,
 		RequestType: "POST",
 		RequestBody: string(formatData),
@@ -95,19 +98,20 @@ func mifosPost(clientBody []string, c *gin.Context) {
 }
 
 func MifosGet(payload *MifosPayloadGet) []byte {
-	cred := GetEnvVar("MIFOS_UN")+GetEnvVar("MIFOS_PASS")
+	cred := utils.GetEnvVar("MIFOS_UN")+":"+utils.GetEnvVar("MIFOS_PASS")
     baseCred := base64.StdEncoding.EncodeToString([]byte(cred))
 
 	ext := payload.UrlExt
+
 	req, err := http.NewRequest("GET", url+ext, nil)
 	if err != nil {
 		log.Error().Msg("Error occurred while binding request data")
 	}
 
 	// Set headers
-	req.Header.Set("Authorization", baseCred)
+	req.Header.Set("Authorization", "Basic "+baseCred)
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Fineract-Platform-TenantId", GetEnvVar("MIFOS_TENANT"))
+	req.Header.Set("Fineract-Platform-TenantId", utils.GetEnvVar("MIFOS_TENANT"))
 
 	// Set client timeout
 	client := &http.Client{Timeout: time.Second * 10}
@@ -130,7 +134,26 @@ func MifosGet(payload *MifosPayloadGet) []byte {
 		log.Error().Msg("Error reading body. ")
 	}
 
-	fmt.Printf("%s\n", body)
+	var apiLog models.ApiLog
+	apiLog.ApiLogFillDefaults()
+
+	db, conErr := utils.GetDatabaseConnection()
+	if conErr != nil {
+		log.Err(conErr).Msg("Error occurred while getting a DB connection from the connection pool")
+	}
+
+	// Log mifos response
+	apiLogData := models.ApiLog{
+		ID: uuid.New().String(),
+		RequestUrl: url+ext,
+		RequestType: "GET",
+		ResponseBody: string(body),
+	}
+	result := db.Create(&apiLogData)
+	if result.Error != nil && result.RowsAffected != 1 {
+		log.Err(result.Error).Msg("Error occurred while logging mifos response")
+	}
+	// fmt.Printf("%s\n", body)
 
 	return body
 }
