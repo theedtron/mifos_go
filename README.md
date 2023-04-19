@@ -4,11 +4,13 @@
 
 ## Introduction
 
-This repository contains a boilerplate REST API service using [Gin](https://gin-gonic.com/) web framework.
+This repository contains a boilerplate REST API service that connects to mifos api using [Gin](https://gin-gonic.com/) web framework. 
 
-This boilerplate can be used to quickly bootstrap a backend project with minimal changes. It uses most common and highly adpated libraries like [zerolog](https://github.com/rs/zerolog) for logging and [viper](https://github.com/spf13/viper) for env configuration.
+This boilerplate uses most common and highly adpated libraries like [zerolog](https://github.com/rs/zerolog) for logging and [viper](https://github.com/spf13/viper) for env configuration.
 
-I have also written a [blog](https://medium.com/@hinsulak/rest-api-service-boilerplate-using-gin-web-framework-golang-c4eeb48b14f) where I explain the process behind creating this boilerplate, feel free to check it out.
+This boilerplate was sourced from  
+[blog](https://medium.com/@hinsulak/rest-api-service-boilerplate-using-gin-web-framework-golang-c4eeb48b14f) 
+which explains the process behind creation.
 
 ## Features
 - HTTP and HTTPS support
