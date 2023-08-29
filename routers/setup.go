@@ -17,6 +17,7 @@ func SetupRouters(app *gin.Engine) {
 		v1.PATCH("/user", controllers.UpdateUser)
 		v1.DELETE("/user/:id", controllers.DeleteUser)
 		v1.POST("/test/mail", controllers.SendTrxOtp)
+		v1.POST("/mifos/search/user", controllers.SearchMifosUser)
 	}
 	// Standalone route example
 	// app.GET("/ping", controllers.Ping)
